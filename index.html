@@ -782,19 +782,55 @@ async function callAPI(action, params = {}) {
 // ============================================
 let deferredInstallPrompt = null;
 
+// Tangkap beforeinstallprompt SESEGERA MUNGKIN
+// Harus di-register sebelum apapun agar tidak terlewat
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  setTimeout(() => {
+    document.getElementById('pwa-install-banner').style.display = 'flex';
+  }, 2000);
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-install-banner').style.display = 'none';
+  document.getElementById('pwaStatus').textContent = '✓ App Terinstall';
+  deferredInstallPrompt = null;
+});
+
+function installPWA() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(choice => {
+    deferredInstallPrompt = null;
+    document.getElementById('pwa-install-banner').style.display = 'none';
+  });
+}
+
+function dismissInstallBanner() {
+  document.getElementById('pwa-install-banner').style.display = 'none';
+}
+
+// Register Service Worker setelah halaman load
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
-    try {
-      const reg = await navigator.serviceWorker.register('./sw.js');
-      console.log('[PWA] Service Worker terdaftar:', reg.scope);
-      document.getElementById('pwaStatus').textContent = '✓ PWA Ready';
-    } catch (err) {
-      console.warn('[PWA] Service Worker gagal:', err);
+    // Deteksi standalone dulu
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      document.getElementById('pwaStatus').textContent = '✓ Berjalan sebagai App';
+      document.getElementById('pwa-install-banner').style.display = 'none';
     }
-  });
-  navigator.serviceWorker.addEventListener('message', event => {
-    if (event.data && event.data.type === 'SW_UPDATE_AVAILABLE') {
-      showUpdateNotification();
+    try {
+      await navigator.serviceWorker.register('./sw.js');
+      document.getElementById('pwaStatus').textContent =
+        (document.getElementById('pwaStatus').textContent || '') || '✓ PWA Ready';
+      // Dengarkan pesan update dari SW
+      navigator.serviceWorker.addEventListener('message', event => {
+        if (event.data && event.data.type === 'SW_UPDATE_AVAILABLE') {
+          showUpdateNotification();
+        }
+      });
+    } catch (err) {
+      console.warn('[PWA] SW gagal:', err);
     }
   });
 }
@@ -807,43 +843,6 @@ function showUpdateNotification() {
   notif.innerHTML = '<i class="fas fa-sync-alt"></i><span>Versi baru tersedia!</span><button onclick="window.location.reload()" style="background:white;color:#1d4ed8;border:none;padding:5px 12px;border-radius:8px;font-weight:700;cursor:pointer;font-size:12px;">Perbarui</button><button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:16px;">✕</button>';
   document.body.appendChild(notif);
   setTimeout(() => { if (notif.parentElement) notif.remove(); }, 15000);
-}
-
-// PWA Install Prompt
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  // Reset dismissed dan selalu tampilkan banner
-  localStorage.removeItem('pwa_install_dismissed');
-  setTimeout(() => {
-    document.getElementById('pwa-install-banner').style.display = 'flex';
-  }, 2000);
-});
-
-window.addEventListener('appinstalled', () => {
-  console.log('[PWA] App berhasil diinstall!');
-  document.getElementById('pwa-install-banner').style.display = 'none';
-  document.getElementById('pwaStatus').textContent = '✓ App Terinstall';
-  deferredInstallPrompt = null;
-});
-
-function installPWA() {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  deferredInstallPrompt.userChoice.then(choice => {
-    if (choice.outcome === 'accepted') console.log('[PWA] User menerima install');
-    deferredInstallPrompt = null;
-    document.getElementById('pwa-install-banner').style.display = 'none';
-  });
-}
-
-function dismissInstallBanner() {
-  document.getElementById('pwa-install-banner').style.display = 'none';
-}
-
-// Deteksi mode standalone (sudah diinstall)
-if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-  document.getElementById('pwaStatus').textContent = '✓ Berjalan sebagai App';
 }
 
 // ============================================
