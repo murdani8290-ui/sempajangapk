@@ -154,17 +154,7 @@
             <span>📷 Scan QR Code</span>
           </button>
 
-          <!-- Tombol alternatif: pilih dari galeri -->
-          <button 
-            id="btnFallbackScan" 
-            class="w-full mt-2 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed text-gray-600 font-medium rounded-xl transition-all flex items-center justify-center gap-2 text-sm" 
-            onclick="triggerGaleri()"
-            disabled
-          >
-            <i class="fas fa-image"></i>
-            <span>🖼️ Pilih dari Galeri</span>
-          </button>
-          <input type="file" id="qr-galeri-input" accept="image/*" class="hidden" onchange="handleFileScan(this)">
+
           
           <p id="msgSiswa" class="text-sm text-gray-500 text-center mt-3">
             Masukkan NIS untuk melanjutkan
@@ -1684,9 +1674,6 @@ function validateNis() {
   
   const isValid = nis.length >= 3 && /^\d+$/.test(nis);
   btn.disabled = !isValid;
-  var btnGaleri = document.getElementById('btnFallbackScan');
-  if (btnGaleri) btnGaleri.disabled = !isValid;
-
   if (isValid) {
     msgEl.textContent = '✓ NIS valid. Tekan tombol Scan QR Code untuk foto QR.';
     msgEl.className = 'text-sm text-green-600 text-center mt-3';
@@ -1748,12 +1735,6 @@ function _tampilkanFallback(msg) {
 
 function triggerFileScan() {
   document.getElementById('qr-file-input').click();
-}
-
-function triggerGaleri() {
-  var nis = document.getElementById('nisSiswa').value.trim();
-  if (!nis) { alert("Masukkan NIS terlebih dahulu!"); return; }
-  document.getElementById('qr-galeri-input').click();
 }
 
 function handleFileScan(input) {
