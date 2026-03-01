@@ -1453,7 +1453,7 @@
   <script>
     // ⚠️ WAJIB DIISI: URL Web App Google Apps Script Anda
     // Contoh: 'https://script.google.com/macros/s/AKfycb.../exec'
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwQISyvEmcak7KPOJZW9q6AgdvqS3uCsVF4bdf_62kjW4WUwmi9do_Zwj4YmuWPn3NzcQ/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx7cexmLa8WUmX78l2MVHwjHJ2qzuRqlIGyQOlfATWKwZqIpeeb-2tu39hEG8JVIUVo/exec';
 
     // ============================================================
     // Pengganti google.script.run untuk GitHub Pages
@@ -1473,35 +1473,28 @@
       _gasFailure = null;
 
       try {
-        // Bangun URL dengan parameter
-        const params = new URLSearchParams({ func: funcName });
-        if (args && args.length > 0) {
-          params.set('args', JSON.stringify(args));
-        }
-        const url = GAS_URL + '?' + params.toString();
-
-        // GAS selalu redirect — gunakan no-cors tidak bisa baca body,
-        // jadi kita fetch dengan redirect:follow dan baca text dulu
-        const response = await fetch(url, {
-          method: 'GET',
+        // Kirim via POST — tidak kena CORS redirect masalah seperti GET
+        // GAS menerima di doPost(e) dan return JSON langsung
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
           redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain' }, // text/plain hindari preflight OPTIONS
+          body: JSON.stringify({ func: funcName, args: args || [] })
         });
 
         const text = await response.text();
 
-        // GAS kadang wrap JSON dalam HTML jika terjadi error halaman
-        // Coba parse JSON dari text
+        // Parse JSON dari response
         let data;
         try {
-          // Cari JSON object dalam response (kadang ada prefix HTML)
           const jsonMatch = text.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             data = JSON.parse(jsonMatch[0]);
           } else {
-            throw new Error('Response bukan JSON: ' + text.substring(0, 100));
+            throw new Error('Response tidak valid: ' + text.substring(0, 200));
           }
         } catch(parseErr) {
-          throw new Error('Gagal parse response: ' + parseErr.message);
+          throw new Error('Gagal parse: ' + parseErr.message);
         }
 
         if (data.error) {
@@ -1511,8 +1504,8 @@
         }
 
       } catch (err) {
-        console.error('GAS call error [' + funcName + ']:', err);
-        if (failureCb) failureCb({ message: 'Koneksi server gagal: ' + err.message });
+        console.error('[GAS] Error ' + funcName + ':', err);
+        if (failureCb) failureCb({ message: err.message || 'Gagal menghubungi server' });
       }
     }
 
