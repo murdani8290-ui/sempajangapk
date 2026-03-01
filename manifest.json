@@ -1,0 +1,27 @@
+{
+  "name": "SEMPAJANG - SMAN 10 Pinrang",
+  "short_name": "SEMPAJANG",
+  "description": "Sistem Presensi Shalat Berjamaah SMAN 10 Pinrang",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#16a34a",
+  "theme_color": "#16a34a",
+  "orientation": "portrait",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "https://sman10pinrang.sch.id/wp-content/uploads/2021/02/cropped-cropped-pake-logo-ini-sman-10-png.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://sman10pinrang.sch.id/wp-content/uploads/2021/02/cropped-cropped-pake-logo-ini-sman-10-png.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": []
+}
