@@ -1,7 +1,4 @@
-// sw.js - Service Worker SEMPAJANG PWA
-// Strategi: Stale While Revalidate
-// → Tampilkan cache dulu (cepat), update di background, beritahu user jika ada versi baru
-
+// sw.js - Service Worker SEMPAJANG PWA v2
 const CACHE_NAME = 'sempajang-v1';
 
 const STATIC_ASSETS = [
@@ -12,9 +9,8 @@ const STATIC_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
 ];
 
-// INSTALL: Cache aset pertama kali
+// INSTALL: cache aset, TIDAK skipWaiting agar install prompt tetap muncul
 self.addEventListener('install', event => {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return Promise.allSettled(
@@ -24,6 +20,7 @@ self.addEventListener('install', event => {
       );
     })
   );
+  // TIDAK pakai skipWaiting - biarkan Chrome handle lifecycle normal
 });
 
 // ACTIVATE: TIDAK hapus cache lama, langsung klaim semua tab
@@ -35,7 +32,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Bypass: API Google, non-GET
+  // Bypass: API Google Apps Script dan non-GET
   if (
     url.hostname.includes('script.google.com') ||
     url.hostname.includes('googleapis.com') ||
@@ -49,24 +46,24 @@ async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE_NAME);
   const cachedResponse = await cache.match(request);
 
-  // Fetch network di background (tidak ditunggu jika ada cache)
+  // Fetch network di background
   const networkFetchPromise = fetch(request.clone()).then(async networkResponse => {
     if (!networkResponse || !networkResponse.ok) return networkResponse;
 
-    // Khusus index.html: cek apakah ada perubahan
+    // Khusus index.html: cek apakah ada perubahan, lalu beritahu user
     if (cachedResponse && request.url.includes('index.html')) {
       try {
         const cachedText = await cachedResponse.clone().text();
         const networkText = await networkResponse.clone().text();
         if (cachedText !== networkText) {
           await cache.put(request, networkResponse.clone());
-          notifyClientsOfUpdate(); // beritahu app ada update
+          notifyClientsOfUpdate();
         }
       } catch(e) {
         await cache.put(request, networkResponse.clone());
       }
     } else {
-      // Aset lain: update cache diam-diam tanpa notifikasi
+      // Aset lain: update cache diam-diam
       await cache.put(request, networkResponse.clone());
     }
     return networkResponse;
