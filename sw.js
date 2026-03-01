@@ -1,114 +1,93 @@
-// ============================================================
-// SEMPAJANG - Service Worker
-// Versi cache — update angka ini setiap deploy baru
-// ============================================================
+// sw.js - Service Worker SEMPAJANG PWA
+// Strategi: Stale While Revalidate
+// → Tampilkan cache dulu (cepat), update di background, beritahu user jika ada versi baru
+
 const CACHE_NAME = 'sempajang-v1';
 
-// File yang di-cache untuk akses offline
-const CACHE_ASSETS = [
-  './',
+const STATIC_ASSETS = [
   './index.html',
-  './manifest.json',
-  // CDN libraries — di-cache agar bisa offline
-  'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4',
+  'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
 ];
 
-// ============================================================
-// INSTALL — cache semua asset saat pertama kali install
-// ============================================================
-self.addEventListener('install', function(event) {
-  console.log('[SW] Installing SEMPAJANG v1...');
+// INSTALL: Cache aset pertama kali
+self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      console.log('[SW] Caching assets...');
-      // Gunakan individual add agar satu gagal tidak block semua
+    caches.open(CACHE_NAME).then(cache => {
       return Promise.allSettled(
-        CACHE_ASSETS.map(url => cache.add(url).catch(err => {
-          console.warn('[SW] Gagal cache:', url, err.message);
-        }))
+        STATIC_ASSETS.map(url =>
+          cache.add(url).catch(err => console.warn('[SW] Skip cache:', url, err))
+        )
       );
-    }).then(function() {
-      console.log('[SW] Install selesai');
-      return self.skipWaiting(); // Aktif langsung tanpa menunggu tab ditutup
     })
   );
 });
 
-// ============================================================
-// ACTIVATE — hapus cache lama
-// ============================================================
-self.addEventListener('activate', function(event) {
-  console.log('[SW] Activating...');
-  event.waitUntil(
-    caches.keys().then(function(keys) {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME)
-            .map(key => {
-              console.log('[SW] Menghapus cache lama:', key);
-              return caches.delete(key);
-            })
-      );
-    }).then(function() {
-      console.log('[SW] Aktif dan siap');
-      return self.clients.claim();
-    })
-  );
+// ACTIVATE: TIDAK hapus cache lama, langsung klaim semua tab
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
 });
 
-// ============================================================
-// FETCH — strategi: Network First untuk API, Cache First untuk asset
-// ============================================================
-self.addEventListener('fetch', function(event) {
+// FETCH: Stale While Revalidate
+self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Panggilan ke GAS backend — selalu Network (tidak pernah di-cache)
-  // karena data harus selalu fresh
-  if (url.hostname.includes('script.google.com') ||
-      url.hostname.includes('googleapis.com')) {
-    event.respondWith(
-      fetch(event.request).catch(function() {
-        return new Response(
-          JSON.stringify({ error: 'Tidak ada koneksi internet. Coba lagi nanti.' }),
-          { headers: { 'Content-Type': 'application/json' } }
-        );
-      })
-    );
-    return;
-  }
+  // Bypass: API Google, non-GET
+  if (
+    url.hostname.includes('script.google.com') ||
+    url.hostname.includes('googleapis.com') ||
+    event.request.method !== 'GET'
+  ) return;
 
-  // Asset lain — Cache First, fallback ke network
-  event.respondWith(
-    caches.match(event.request).then(function(cached) {
-      if (cached) return cached;
-
-      return fetch(event.request).then(function(response) {
-        // Cache response baru (hanya request GET yang berhasil)
-        if (event.request.method === 'GET' && response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(function(cache) {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return response;
-      }).catch(function() {
-        // Offline dan tidak ada cache — tampilkan halaman offline minimal
-        if (event.request.destination === 'document') {
-          return caches.match('./index.html');
-        }
-        return new Response('', { status: 408 });
-      });
-    })
-  );
+  event.respondWith(staleWhileRevalidate(event.request));
 });
 
-// ============================================================
-// MESSAGE — bisa trigger update dari halaman
-// ============================================================
-self.addEventListener('message', function(event) {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cachedResponse = await cache.match(request);
+
+  // Fetch network di background (tidak ditunggu jika ada cache)
+  const networkFetchPromise = fetch(request.clone()).then(async networkResponse => {
+    if (!networkResponse || !networkResponse.ok) return networkResponse;
+
+    // Khusus index.html: cek apakah ada perubahan
+    if (cachedResponse && request.url.includes('index.html')) {
+      try {
+        const cachedText = await cachedResponse.clone().text();
+        const networkText = await networkResponse.clone().text();
+        if (cachedText !== networkText) {
+          await cache.put(request, networkResponse.clone());
+          notifyClientsOfUpdate(); // beritahu app ada update
+        }
+      } catch(e) {
+        await cache.put(request, networkResponse.clone());
+      }
+    } else {
+      // Aset lain: update cache diam-diam tanpa notifikasi
+      await cache.put(request, networkResponse.clone());
+    }
+    return networkResponse;
+  }).catch(() => null);
+
+  // Sajikan cache dulu jika ada (cepat)
+  if (cachedResponse) return cachedResponse;
+
+  // Tidak ada cache → tunggu network
+  const networkResponse = await networkFetchPromise;
+  if (networkResponse) return networkResponse;
+
+  // Offline total
+  return new Response('Offline - Buka kembali saat ada koneksi', {
+    status: 503,
+    headers: { 'Content-Type': 'text/plain' }
+  });
+}
+
+// Kirim pesan update ke semua tab aktif
+async function notifyClientsOfUpdate() {
+  const clients = await self.clients.matchAll({ type: 'window' });
+  clients.forEach(client => client.postMessage({ type: 'SW_UPDATE_AVAILABLE' }));
+}
