@@ -3,42 +3,31 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SEMPAJANG - Sistem Presensi Shalat SMAN 10 Pinrang</title>
 
-  <!-- ======= PWA META TAGS ======= -->
-  <meta name="application-name" content="SEMPAJANG">
-  <meta name="description" content="Sistem Presensi Shalat Berjamaah SMAN 10 Pinrang">
-  <meta name="theme-color" content="#16a34a">
+  <!-- ============ PWA SUPPORT ============ -->
+  <link rel="manifest" href="manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="SEMPAJANG">
+  <meta name="application-name" content="SEMPAJANG">
+  <meta name="theme-color" content="#16a34a">
   <meta name="msapplication-TileColor" content="#16a34a">
-  <meta name="msapplication-tap-highlight" content="no">
-
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
-
-  <!-- Apple Touch Icon -->
+  <meta name="description" content="Sistem Presensi Shalat Berjamaah SMAN 10 Pinrang">
   <link rel="apple-touch-icon" href="https://sman10pinrang.sch.id/wp-content/uploads/2021/02/cropped-cropped-pake-logo-ini-sman-10-png.png">
+  <!-- ===================================== -->
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="https://sman10pinrang.sch.id/wp-content/uploads/2021/02/cropped-cropped-pake-logo-ini-sman-10-png.png">
-
-  <!-- ======= LIBRARIES ======= -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-
   <style>
     @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
     @keyframes spin { to{transform:rotate(360deg)} }
-    @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
     .animate-fade-in{animation:fadeIn 0.3s ease-out}
     .animate-spin{animation:spin 1s linear infinite}
-    .animate-slide-up{animation:slideUp 0.4s ease-out}
     #reader{width:100%;border-radius:12px;overflow:hidden}
     #reader video{border-radius:12px}
     .custom-scrollbar::-webkit-scrollbar{width:6px}
@@ -51,68 +40,66 @@
     .section.active{display:block;animation:fadeIn 0.3s ease-out}
     .role-btn.active{background:linear-gradient(135deg,#dcfce7 0%,#bbf7d0 100%)}
 
-    /* PWA: safe area untuk notch iPhone */
-    body {
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
-      padding-left: env(safe-area-inset-left);
-      padding-right: env(safe-area-inset-right);
-    }
-
-    /* PWA Install Banner */
-    #pwa-install-banner {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      z-index: 9999;
-      background: linear-gradient(135deg, #16a34a, #15803d);
-      color: white;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
-      animation: slideUp 0.4s ease-out;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    }
-    #pwa-install-banner img { width: 40px; height: 40px; border-radius: 8px; background: white; padding: 3px; }
-    #pwa-install-banner .text { flex: 1; }
-    #pwa-install-banner .text p { margin: 0; font-size: 13px; }
-    #pwa-install-banner .text b { font-size: 14px; }
-    #btn-pwa-install { background: white; color: #16a34a; font-weight: 700; padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; white-space: nowrap; }
-    #btn-pwa-dismiss { background: transparent; border: none; color: rgba(255,255,255,0.7); cursor: pointer; padding: 4px; font-size: 16px; }
-
-    /* Offline indicator */
-    #offline-bar {
+    /* ====== PWA OFFLINE BANNER ====== */
+    #offlineBanner {
       display: none;
       position: fixed;
       top: 0; left: 0; right: 0;
-      z-index: 9998;
       background: #ef4444;
       color: white;
       text-align: center;
-      padding: 6px;
-      font-size: 12px;
+      padding: 8px 16px;
+      font-size: 13px;
       font-weight: 600;
+      z-index: 9999;
+      animation: fadeIn 0.3s ease-out;
     }
-    body.offline #offline-bar { display: block; }
+    #offlineBanner.show { display: block; }
+
+    /* ====== PWA INSTALL PROMPT ====== */
+    #installPrompt {
+      display: none;
+      position: fixed;
+      bottom: 16px; left: 16px; right: 16px;
+      background: white;
+      border: 2px solid #16a34a;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      z-index: 9998;
+      animation: fadeIn 0.3s ease-out;
+    }
+    #installPrompt.show { display: block; }
+
+    /* Tambah padding body saat offline banner muncul */
+    body.offline { padding-top: 40px; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen p-4 md:p-6">
 
-<!-- Offline Indicator -->
-<div id="offline-bar">
-  <i class="fas fa-wifi-slash mr-1"></i> Anda sedang offline — fitur absensi memerlukan koneksi internet
+<!-- ====== OFFLINE BANNER ====== -->
+<div id="offlineBanner">
+  <i class="fas fa-wifi-slash mr-2"></i>Tidak ada koneksi internet. Beberapa fitur mungkin tidak berfungsi.
 </div>
 
-<!-- PWA Install Banner (muncul otomatis jika belum install) -->
-<div id="pwa-install-banner" style="display:none">
-  <img src="https://sman10pinrang.sch.id/wp-content/uploads/2021/02/cropped-cropped-pake-logo-ini-sman-10-png.png" alt="Logo">
-  <div class="text">
-    <b>Install SEMPAJANG</b>
-    <p>Tambahkan ke layar utama HP Anda</p>
+<!-- ====== PWA INSTALL PROMPT ====== -->
+<div id="installPrompt">
+  <div class="flex items-center gap-3">
+    <img src="https://sman10pinrang.sch.id/wp-content/uploads/2021/02/cropped-cropped-pake-logo-ini-sman-10-png.png"
+      class="w-12 h-12 rounded-full border-2 border-green-500" alt="Logo">
+    <div class="flex-1">
+      <p class="font-bold text-gray-800 text-sm">Install SEMPAJANG</p>
+      <p class="text-xs text-gray-500">Tambahkan ke layar utama untuk akses lebih cepat</p>
+    </div>
   </div>
-  <button id="btn-pwa-install" onclick="installPWA()">Install</button>
-  <button id="btn-pwa-dismiss" onclick="dismissInstallBanner()"><i class="fas fa-times"></i></button>
+  <div class="flex gap-2 mt-3">
+    <button onclick="installPWA()" class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-sm">
+      <i class="fas fa-download mr-1"></i>Install
+    </button>
+    <button onclick="dismissInstall()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium rounded-lg text-sm">
+      Nanti
+    </button>
+  </div>
 </div>
 
 <div class="max-w-lg mx-auto">
@@ -414,6 +401,7 @@
       </div>
     </div>
 
+    <!-- Admin Tabs -->
     <div class="flex gap-2 mb-4 flex-wrap">
       <button class="admin-tab flex-1 py-2 px-3 bg-blue-100 text-blue-700 font-medium rounded-lg transition-all hover:bg-blue-200" onclick="showAdminTab('siswa')" id="tabBtnSiswa"><i class="fas fa-users mr-1"></i>Siswa</button>
       <button class="admin-tab flex-1 py-2 px-3 bg-gray-100 text-gray-600 font-medium rounded-lg transition-all hover:bg-gray-200" onclick="showAdminTab('guru')" id="tabBtnGuru"><i class="fas fa-user-tie mr-1"></i>Guru</button>
@@ -422,6 +410,7 @@
       <button class="admin-tab flex-1 py-2 px-3 bg-gray-100 text-gray-600 font-medium rounded-lg transition-all hover:bg-gray-200" onclick="showAdminTab('autoalpa')" id="tabBtnAutoalpa"><i class="fas fa-clock mr-1"></i>Auto Alpa</button>
     </div>
 
+    <!-- Tab Siswa -->
     <div id="admTabSiswa" class="admin-panel">
       <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
         <h4 class="font-semibold text-gray-800 mb-3">Tambah Siswa Baru</h4>
@@ -451,6 +440,7 @@
       </div>
     </div>
 
+    <!-- Tab Guru -->
     <div id="admTabGuru" class="admin-panel hidden">
       <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
         <h4 class="font-semibold text-gray-800 mb-3">Tambah Guru Baru</h4>
@@ -475,12 +465,14 @@
       </div>
     </div>
 
+    <!-- Tab Statistik -->
     <div id="admTabStatistik" class="admin-panel hidden">
       <div class="flex gap-2 mb-4">
         <button class="stat-type-btn flex-1 py-2 bg-green-100 text-green-700 font-medium rounded-lg" onclick="showStatistikType('harian')" id="btnStatHarian"><i class="fas fa-calendar-day mr-1"></i>Harian</button>
         <button class="stat-type-btn flex-1 py-2 bg-gray-100 text-gray-600 font-medium rounded-lg" onclick="showStatistikType('bulanan')" id="btnStatBulanan"><i class="fas fa-calendar-alt mr-1"></i>Bulanan</button>
         <button class="stat-type-btn flex-1 py-2 bg-gray-100 text-gray-600 font-medium rounded-lg" onclick="showStatistikType('total')" id="btnStatTotal"><i class="fas fa-chart-bar mr-1"></i>Total</button>
       </div>
+
       <div id="statHarianPanel">
         <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200 mb-4">
           <div class="flex items-center justify-between mb-3">
@@ -503,6 +495,7 @@
           <i class="fas fa-file-pdf mr-1"></i>Download PDF Statistik Harian
         </button>
       </div>
+
       <div id="statBulananPanel" class="hidden">
         <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200 mb-4">
           <div class="flex items-center gap-2 mb-3">
@@ -535,6 +528,7 @@
           <i class="fas fa-file-pdf mr-1"></i>Download PDF Statistik Bulanan
         </button>
       </div>
+
       <div id="statTotalPanel" class="hidden">
         <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200 mb-4">
           <h4 class="font-bold text-purple-800 mb-3"><i class="fas fa-chart-bar mr-2"></i>Statistik Keseluruhan</h4>
@@ -577,6 +571,7 @@
       </div>
     </div>
 
+    <!-- Tab Rekap -->
     <div id="admTabRekap" class="admin-panel hidden">
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-700 mb-3"><i class="fas fa-calendar-alt text-purple-500 mr-2"></i>Filter & Lihat Data</h5>
@@ -633,6 +628,8 @@
         </table>
       </div>
       <p class="text-xs text-gray-500 mt-2 text-center">Total: <span id="totalRekapDisplay">0</span> siswa</p>
+
+      <!-- Edit Panel -->
       <div id="editStatusPanel" class="hidden mt-4 bg-amber-50 rounded-xl p-4 border border-amber-200">
         <div class="flex items-center justify-between mb-3">
           <h5 class="font-semibold text-amber-800"><i class="fas fa-edit mr-2"></i>Edit Status Absensi</h5>
@@ -660,6 +657,8 @@
         </div>
         <p id="editStatusResult" class="text-sm text-center mt-2 min-h-[20px]"></p>
       </div>
+
+      <!-- Hapus Data -->
       <div class="mt-4 bg-red-50 rounded-xl p-4 border border-red-200">
         <h5 class="font-semibold text-red-800 mb-2"><i class="fas fa-trash-alt mr-2"></i>Hapus Data Absensi</h5>
         <p class="text-xs text-red-600 mb-3">⚠️ Menghapus data tidak dapat dikembalikan!</p>
@@ -674,6 +673,7 @@
       </div>
     </div>
 
+    <!-- Tab Auto Alpa -->
     <div id="admTabAutoalpa" class="admin-panel hidden">
       <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4 border border-orange-200 mb-4">
         <div class="flex items-center gap-3 mb-3">
@@ -683,12 +683,13 @@
         <div class="bg-white rounded-lg p-3 border border-orange-100">
           <ul class="text-xs text-gray-600 space-y-1 ml-4 list-disc">
             <li>Berjalan otomatis setiap hari pada jam yang ditentukan</li>
-            <li>Siswa yang <strong>BELUM ABSEN</strong> akan ditandai <span class="text-red-600 font-semibold">Alpa</span></li>
+            <li>Siswa yang <strong>BELUM ABSEN</strong> dalam 3 jam setelah shalat akan ditandai <span class="text-red-600 font-semibold">Alpa</span></li>
             <li>Siswa yang sudah diinput status <strong>TIDAK AKAN DIUBAH</strong></li>
             <li>Hanya berjalan Senin–Jumat</li>
           </ul>
         </div>
       </div>
+
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-3"><i class="fas fa-toggle-on text-green-500 mr-2"></i>Status Trigger</h5>
         <div id="triggerStatusContainer" class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -701,11 +702,12 @@
           <button class="py-2 px-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg text-sm" onclick="cekStatusAutoAlpa()"><i class="fas fa-sync-alt"></i></button>
         </div>
       </div>
+
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-3"><i class="fas fa-hand-pointer text-blue-500 mr-2"></i>Jalankan Manual</h5>
         <div class="flex gap-2">
-          <button class="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg text-sm" onclick="simulasiAutoAlpa()" id="btnSimulasiAlpa"><i class="fas fa-eye mr-1"></i>Preview</button>
-          <button class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm" onclick="jalankanAutoAlpaSekarang()" id="btnJalankanAlpa"><i class="fas fa-bolt mr-1"></i>Jalankan</button>
+          <button class="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg text-sm" onclick="simulasiAutoAlpa()" id="btnSimulasiAlpa"><i class="fas fa-eye mr-1"></i>Preview (Simulasi)</button>
+          <button class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm" onclick="jalankanAutoAlpaSekarang()" id="btnJalankanAlpa"><i class="fas fa-bolt mr-1"></i>Jalankan Sekarang</button>
         </div>
         <div id="autoAlpaResult" class="mt-3 hidden">
           <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
@@ -714,6 +716,7 @@
           </div>
         </div>
       </div>
+
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-3"><i class="fas fa-paper-plane text-green-500 mr-2"></i>Kirim Rekap ke Wali Kelas</h5>
         <div class="flex gap-2 mb-3">
@@ -731,6 +734,7 @@
         </button>
         <p id="kirimRekapWaliResult" class="text-sm text-center mt-2 min-h-[20px]"></p>
       </div>
+
       <div class="bg-white rounded-xl p-4 border border-gray-200">
         <h5 class="font-semibold text-gray-800 mb-3"><i class="fas fa-undo text-purple-500 mr-2"></i>Reset Status Alpa</h5>
         <div class="grid grid-cols-2 gap-2 mb-3">
@@ -750,18 +754,17 @@
   </div>
 </section>
 
-</div>
+</div><!-- end .p-5 -->
 
 <footer class="bg-gray-50 py-4 text-center border-t border-gray-200">
   <p class="text-xs text-gray-500">© 2025 SEMPAJANG · Dibuat oleh <span class="font-semibold text-green-600">Murdani</span></p>
-  <p class="text-xs text-gray-400 mt-1" id="pwaStatus"></p>
 </footer>
-</div>
-</div>
+</div><!-- end card -->
+</div><!-- end max-w-lg -->
 
 <script>
 // ============================================
-// KONFIGURASI API
+// KONFIGURASI API - ENDPOINT GOOGLE APPS SCRIPT
 // ============================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbwQISyvEmcak7KPOJZW9q6AgdvqS3uCsVF4bdf_62kjW4WUwmi9do_Zwj4YmuWPn3NzcQ/exec';
 
@@ -776,88 +779,6 @@ async function callAPI(action, params = {}) {
   if (!result.success) throw new Error(result.error || 'Terjadi kesalahan server.');
   return result.data;
 }
-
-// ============================================
-// PWA: Service Worker Registration
-// ============================================
-let deferredInstallPrompt = null;
-
-// Tangkap beforeinstallprompt SESEGERA MUNGKIN
-// Harus di-register sebelum apapun agar tidak terlewat
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  setTimeout(() => {
-    document.getElementById('pwa-install-banner').style.display = 'flex';
-  }, 2000);
-});
-
-window.addEventListener('appinstalled', () => {
-  document.getElementById('pwa-install-banner').style.display = 'none';
-  document.getElementById('pwaStatus').textContent = '✓ App Terinstall';
-  deferredInstallPrompt = null;
-});
-
-function installPWA() {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  deferredInstallPrompt.userChoice.then(choice => {
-    deferredInstallPrompt = null;
-    document.getElementById('pwa-install-banner').style.display = 'none';
-  });
-}
-
-function dismissInstallBanner() {
-  document.getElementById('pwa-install-banner').style.display = 'none';
-}
-
-// Register Service Worker setelah halaman load
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
-    // Deteksi standalone dulu
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-      document.getElementById('pwaStatus').textContent = '✓ Berjalan sebagai App';
-      document.getElementById('pwa-install-banner').style.display = 'none';
-    }
-    try {
-      await navigator.serviceWorker.register('./sw.js');
-      document.getElementById('pwaStatus').textContent =
-        (document.getElementById('pwaStatus').textContent || '') || '✓ PWA Ready';
-      // Dengarkan pesan update dari SW
-      navigator.serviceWorker.addEventListener('message', event => {
-        if (event.data && event.data.type === 'SW_UPDATE_AVAILABLE') {
-          showUpdateNotification();
-        }
-      });
-    } catch (err) {
-      console.warn('[PWA] SW gagal:', err);
-    }
-  });
-}
-
-function showUpdateNotification() {
-  if (document.getElementById('update-notif')) return;
-  const notif = document.createElement('div');
-  notif.id = 'update-notif';
-  notif.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1d4ed8;color:white;padding:12px 18px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.25);z-index:9999;display:flex;align-items:center;gap:12px;font-size:13px;white-space:nowrap;animation:slideUp 0.3s ease-out;';
-  notif.innerHTML = '<i class="fas fa-sync-alt"></i><span>Versi baru tersedia!</span><button onclick="window.location.reload()" style="background:white;color:#1d4ed8;border:none;padding:5px 12px;border-radius:8px;font-weight:700;cursor:pointer;font-size:12px;">Perbarui</button><button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:16px;">✕</button>';
-  document.body.appendChild(notif);
-  setTimeout(() => { if (notif.parentElement) notif.remove(); }, 15000);
-}
-
-// ============================================
-// PWA: Deteksi Online/Offline
-// ============================================
-function updateOnlineStatus() {
-  if (!navigator.onLine) {
-    document.body.classList.add('offline');
-  } else {
-    document.body.classList.remove('offline');
-  }
-}
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
-updateOnlineStatus();
 
 // ============================================
 // STATE
@@ -1175,8 +1096,13 @@ async function downloadReport() {
   const bulan = document.getElementById('bulanLaporan').value;
   if (!bulan) { alert('Pilih bulan terlebih dahulu!'); return; }
   setButtonLoading('btnUnduhLaporan', true);
-  try { const url = await callAPI('exportLaporanKelasToPDF', { className: AppState.activeClass, monthYear: bulan }); window.open(url, '_blank'); }
-  catch (err) { alert('Gagal: ' + err.message); }
+  const win = window.open('', '_blank');
+  if (win) win.document.write('<p style="font-family:sans-serif;padding:20px">⏳ Sedang memuat PDF, harap tunggu...</p>');
+  try {
+    const url = await callAPI('exportLaporanKelasToPDF', { className: AppState.activeClass, monthYear: bulan });
+    if (win) { win.location.href = url; } else { window.open(url, '_blank'); }
+  }
+  catch (err) { if (win) win.close(); alert('Gagal: ' + err.message); }
   setButtonLoading('btnUnduhLaporan', false);
 }
 
@@ -1323,8 +1249,13 @@ async function downloadRekapHarianPDF() {
   const tanggal = document.getElementById('admRekapDate').value;
   if (!tanggal) { alert('Pilih tanggal terlebih dahulu!'); return; }
   setButtonLoading('btnDownloadHarian', true);
-  try { window.open(await callAPI('exportRekapHarianPDF', { tanggal }), '_blank'); }
-  catch (err) { alert('Gagal: ' + err.message); }
+  const win = window.open('', '_blank');
+  if (win) win.document.write('<p style="font-family:sans-serif;padding:20px">⏳ Sedang memuat PDF, harap tunggu...</p>');
+  try {
+    const url = await callAPI('exportRekapHarianPDF', { tanggal });
+    if (win) { win.location.href = url; } else { window.open(url, '_blank'); }
+  }
+  catch (err) { if (win) win.close(); alert('Gagal: ' + err.message); }
   setButtonLoading('btnDownloadHarian', false);
 }
 
@@ -1332,8 +1263,13 @@ async function downloadRekapBulananPDF() {
   const bulan = document.getElementById('admRekapBulan').value;
   if (!bulan) { alert('Pilih bulan terlebih dahulu!'); return; }
   setButtonLoading('btnDownloadBulananPDF', true);
-  try { window.open(await callAPI('exportRekapBulananPDF', { monthYear: bulan }), '_blank'); }
-  catch (err) { alert('Gagal: ' + err.message); }
+  const win = window.open('', '_blank');
+  if (win) win.document.write('<p style="font-family:sans-serif;padding:20px">⏳ Sedang memuat PDF, harap tunggu...</p>');
+  try {
+    const url = await callAPI('exportRekapBulananPDF', { monthYear: bulan });
+    if (win) { win.location.href = url; } else { window.open(url, '_blank'); }
+  }
+  catch (err) { if (win) win.close(); alert('Gagal: ' + err.message); }
   setButtonLoading('btnDownloadBulananPDF', false);
 }
 
@@ -1479,87 +1415,48 @@ async function loadStatistikBulanan() {
     document.getElementById('statBulananPersen').textContent = (data.ringkasan.persenHadir||0) + '%';
     document.getElementById('statBulananHari').textContent = data.totalHari;
     document.getElementById('statBulananBar').style.width = (data.ringkasan.persenHadir||0) + '%';
-    document.getElementById('statBulananPerHari').innerHTML = (data.statistikPerHari||[]).map(h =>
+    const tbody = document.getElementById('statBulananPerHari');
+    tbody.innerHTML = (data.statistikPerHari||[]).map(h =>
       `<tr class="border-b border-gray-100"><td class="p-2">${h.tanggal}</td><td class="p-2 text-center text-green-600">${h.hadir}</td><td class="p-2 text-center text-amber-600">${h.sakit}</td><td class="p-2 text-center text-blue-600">${h.izin}</td><td class="p-2 text-center text-red-600">${h.alpa}</td></tr>`
     ).join('');
   } catch (err) { console.error('Statistik bulanan error:', err); }
 }
 
 async function loadStatistikTotal() {
-  const elBulan = document.getElementById('statTotalPerBulan');
-  const elKelas = document.getElementById('statTotalPerKelas');
   try {
     const data = await callAPI('getStatistikTotal');
-
-    // Pastikan data & ringkasan ada
-    if (!data) throw new Error('Data kosong dari server');
-    const r = data.ringkasan || { hadir:0, alpa:0, sakit:0, izin:0, persenHadir:0, totalAbsen:0 };
-
-    document.getElementById('statTotalPeriode').textContent = (data.tanggalMulai && data.tanggalAkhir) ? data.tanggalMulai + ' - ' + data.tanggalAkhir : 'Semua Waktu';
-    document.getElementById('statTotalHadir').textContent = r.hadir || 0;
-    document.getElementById('statTotalAlpa').textContent = r.alpa || 0;
-    document.getElementById('statTotalSakit').textContent = r.sakit || 0;
-    document.getElementById('statTotalIzin').textContent = r.izin || 0;
-    document.getElementById('statTotalPersen').textContent = (r.persenHadir || 0) + '%';
-    document.getElementById('statTotalHari').textContent = data.totalHari || 0;
-    document.getElementById('statTotalAbsen').textContent = r.totalAbsen || 0;
-
-    const totalAbsen = (r.hadir||0) + (r.sakit||0) + (r.izin||0) + (r.alpa||0);
-    const persen = b => totalAbsen > 0 ? Math.round(((b||0)/totalAbsen)*100) : 0;
-
-    // Pastikan statistikPerBulan adalah array sebelum .map()
-    const perBulan = Array.isArray(data.statistikPerBulan) ? data.statistikPerBulan : [];
-    elBulan.innerHTML = perBulan.length === 0
-      ? '<tr><td colspan="6" class="p-3 text-center text-gray-400">Belum ada data</td></tr>'
-      : perBulan.map(b => `<tr class="border-b border-gray-100">
-          <td class="p-2">${sanitizeHTML(b.namaBulan||'-')}</td>
-          <td class="p-2 text-center text-green-600">${b.hadir||0}</td>
-          <td class="p-2 text-center text-amber-600">${b.sakit||0}</td>
-          <td class="p-2 text-center text-blue-600">${b.izin||0}</td>
-          <td class="p-2 text-center text-red-600">${b.alpa||0}</td>
-          <td class="p-2 text-center font-semibold">${persen(b.hadir||0)}%</td>
-        </tr>`).join('');
-
-    // Pastikan statistikPerKelas adalah array sebelum .map()
-    const perKelas = Array.isArray(data.statistikPerKelas) ? data.statistikPerKelas : [];
-    elKelas.innerHTML = perKelas.length === 0
-      ? '<tr><td colspan="6" class="p-3 text-center text-gray-400">Belum ada data</td></tr>'
-      : perKelas.map(k => `<tr class="border-b border-gray-100">
-          <td class="p-2">${sanitizeHTML(k.kelas||'-')}</td>
-          <td class="p-2 text-center text-green-600">${k.hadir||0}</td>
-          <td class="p-2 text-center text-amber-600">${k.sakit||0}</td>
-          <td class="p-2 text-center text-blue-600">${k.izin||0}</td>
-          <td class="p-2 text-center text-red-600">${k.alpa||0}</td>
-          <td class="p-2 text-center font-semibold">${persen(k.hadir||0)}%</td>
-        </tr>`).join('');
-
-  } catch (err) {
-    console.error('Statistik total error:', err);
-    elBulan.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`;
-    elKelas.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`;
-  }
+    document.getElementById('statTotalPeriode').textContent = data.tanggalMulai && data.tanggalAkhir ? data.tanggalMulai + ' - ' + data.tanggalAkhir : 'Semua Waktu';
+    document.getElementById('statTotalHadir').textContent = data.ringkasan.hadir;
+    document.getElementById('statTotalAlpa').textContent = data.ringkasan.alpa;
+    document.getElementById('statTotalSakit').textContent = data.ringkasan.sakit;
+    document.getElementById('statTotalIzin').textContent = data.ringkasan.izin;
+    document.getElementById('statTotalPersen').textContent = (data.ringkasan.persenHadir||0) + '%';
+    document.getElementById('statTotalHari').textContent = data.totalHari;
+    document.getElementById('statTotalAbsen').textContent = data.ringkasan.totalAbsen || 0;
+    const totalAbsen = data.ringkasan.hadir + data.ringkasan.sakit + data.ringkasan.izin + data.ringkasan.alpa;
+    const persen = b => totalAbsen > 0 ? Math.round((b/totalAbsen)*100) : 0;
+    document.getElementById('statTotalPerBulan').innerHTML = (data.statistikPerBulan||[]).map(b =>
+      `<tr class="border-b border-gray-100"><td class="p-2">${sanitizeHTML(b.namaBulan)}</td><td class="p-2 text-center text-green-600">${b.hadir}</td><td class="p-2 text-center text-amber-600">${b.sakit}</td><td class="p-2 text-center text-blue-600">${b.izin}</td><td class="p-2 text-center text-red-600">${b.alpa}</td><td class="p-2 text-center font-semibold">${persen(b.hadir)}%</td></tr>`
+    ).join('');
+    document.getElementById('statTotalPerKelas').innerHTML = (data.statistikPerKelas||[]).map(k =>
+      `<tr class="border-b border-gray-100"><td class="p-2">${sanitizeHTML(k.kelas)}</td><td class="p-2 text-center text-green-600">${k.hadir}</td><td class="p-2 text-center text-amber-600">${k.sakit}</td><td class="p-2 text-center text-blue-600">${k.izin}</td><td class="p-2 text-center text-red-600">${k.alpa}</td><td class="p-2 text-center font-semibold">${persen(k.hadir)}%</td></tr>`
+    ).join('');
+  } catch (err) { console.error('Statistik total error:', err); }
 }
 
 async function downloadStatistik(type) {
   let param = '';
-  if (type === 'harian') {
-    // Ambil tanggal dari input atau fallback ke hari ini
-    param = document.getElementById('admRekapDate')?.value || new Date().toISOString().split('T')[0];
-  } else if (type === 'bulanan') {
-    param = document.getElementById('statBulanInput').value;
-    if (!param) { alert('Pilih bulan terlebih dahulu!'); return; }
-  } else if (type === 'total') {
-    param = ''; // statistik total tidak butuh param tanggal
-  }
+  if (type === 'harian') param = document.getElementById('statHarianTanggal').textContent || new Date().toISOString().split('T')[0];
+  else if (type === 'bulanan') { param = document.getElementById('statBulanInput').value; if (!param) { alert('Pilih bulan!'); return; } }
   const btnId = { harian:'btnDownloadStatHarian', bulanan:'btnDownloadStatBulanan', total:'btnDownloadStatTotal' }[type];
   setButtonLoading(btnId, true);
+  const win = window.open('', '_blank');
+  if (win) win.document.write('<p style="font-family:sans-serif;padding:20px">⏳ Sedang memuat PDF, harap tunggu...</p>');
   try {
     const url = await callAPI('exportStatistikPDF', { type, param });
-    if (!url) throw new Error('URL download tidak diterima dari server');
-    window.open(url, '_blank');
-  } catch (err) {
-    alert('Gagal download: ' + err.message);
+    if (win) { win.location.href = url; } else { window.open(url, '_blank'); }
   }
+  catch (err) { if (win) win.close(); alert('Gagal: ' + err.message); }
   setButtonLoading(btnId, false);
 }
 
@@ -1629,7 +1526,7 @@ async function simulasiAutoAlpa() {
 }
 
 async function jalankanAutoAlpaSekarang() {
-  if (!confirm('Jalankan Auto Alpa SEKARANG?\n\nSiswa yang belum absen hari ini akan ditandai ALPA.')) return;
+  if (!confirm('Jalankan Auto Alpa SEKARANG?\n\nSiswa yang belum absen hari ini akan ditandai ALPA dan notifikasi WA akan dikirim.')) return;
   const rd = document.getElementById('autoAlpaResult');
   const rt = document.getElementById('autoAlpaResultTitle');
   const rc = document.getElementById('autoAlpaResultContent');
@@ -1697,7 +1594,7 @@ async function resetAlpaKelas() {
   const tanggal = document.getElementById('resetTanggal').value;
   const resultEl = document.getElementById('resetAlpaResult');
   if (!kelas || !tanggal) { resultEl.innerHTML = '<span class="text-red-600">Pilih kelas dan tanggal!</span>'; return; }
-  if (!confirm(`Reset semua status Alpa kelas ${kelas} pada ${tanggal}?`)) return;
+  if (!confirm(`Reset semua status Alpa kelas ${kelas} pada ${tanggal}?\n\nSiswa akan kembali ke status "Belum Absen".`)) return;
   setButtonLoading('btnResetAlpa', true);
   resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mereset...</span>';
   try {
@@ -1707,12 +1604,94 @@ async function resetAlpaKelas() {
   setButtonLoading('btnResetAlpa', false);
 }
 
-// Init
+// ============================================
+// ====== PWA: SERVICE WORKER & INSTALL ======
+// ============================================
+let deferredInstallPrompt = null;
+
+// Registrasi Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => {
+        console.log('[PWA] Service Worker registered:', reg.scope);
+        // Cek update SW
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Ada update, notif pengguna
+              if (confirm('Versi baru SEMPAJANG tersedia! Muat ulang sekarang?')) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                window.location.reload();
+              }
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[PWA] SW registration failed:', err));
+  });
+}
+
+// Tangkap event install PWA (beforeinstallprompt)
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Tampilkan custom install prompt setelah 3 detik
+  setTimeout(() => {
+    const prompt = document.getElementById('installPrompt');
+    if (prompt) prompt.classList.add('show');
+  }, 3000);
+});
+
+function installPWA() {
+  const prompt = document.getElementById('installPrompt');
+  if (prompt) prompt.classList.remove('show');
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(choice => {
+      console.log('[PWA] Install choice:', choice.outcome);
+      deferredInstallPrompt = null;
+    });
+  }
+}
+
+function dismissInstall() {
+  const prompt = document.getElementById('installPrompt');
+  if (prompt) prompt.classList.remove('show');
+}
+
+// Setelah diinstall
+window.addEventListener('appinstalled', () => {
+  console.log('[PWA] App installed!');
+  deferredInstallPrompt = null;
+  const prompt = document.getElementById('installPrompt');
+  if (prompt) prompt.classList.remove('show');
+});
+
+// Deteksi status online/offline
+function updateOnlineStatus() {
+  const banner = document.getElementById('offlineBanner');
+  if (!navigator.onLine) {
+    banner.classList.add('show');
+    document.body.classList.add('offline');
+  } else {
+    banner.classList.remove('show');
+    document.body.classList.remove('offline');
+  }
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus(); // cek saat pertama load
+
+// ============================================
+// INIT
+// ============================================
 document.addEventListener('DOMContentLoaded', () => {
   switchRole('siswa');
   document.getElementById('waliRekapDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('bulanLaporan').value = new Date().toISOString().slice(0,7);
-  updateOnlineStatus();
 });
 </script>
 </body>
