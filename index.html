@@ -411,6 +411,7 @@
       <button class="admin-tab flex-1 py-2 px-3 bg-gray-100 text-gray-600 font-medium rounded-lg transition-all hover:bg-gray-200" onclick="showAdminTab('statistik')" id="tabBtnStatistik"><i class="fas fa-chart-pie mr-1"></i>Statistik</button>
       <button class="admin-tab flex-1 py-2 px-3 bg-gray-100 text-gray-600 font-medium rounded-lg transition-all hover:bg-gray-200" onclick="showAdminTab('rekap')" id="tabBtnRekap"><i class="fas fa-clipboard-list mr-1"></i>Rekap</button>
       <button class="admin-tab flex-1 py-2 px-3 bg-gray-100 text-gray-600 font-medium rounded-lg transition-all hover:bg-gray-200" onclick="showAdminTab('autoalpa')" id="tabBtnAutoalpa"><i class="fas fa-clock mr-1"></i>Auto Alpa</button>
+      <button class="admin-tab flex-1 py-2 px-3 bg-gray-100 text-gray-600 font-medium rounded-lg transition-all hover:bg-gray-200" onclick="showAdminTab('backup')" id="tabBtnBackup"><i class="fas fa-database mr-1"></i>Backup</button>
     </div>
 
     <!-- Tab Siswa -->
@@ -751,6 +752,54 @@
       </div>
     </div>
 
+    <!-- Tab Backup -->
+    <div id="admTabBackup" class="admin-panel hidden">
+      <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200 mb-4">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center"><i class="fas fa-database text-xl text-blue-600"></i></div>
+          <div><h4 class="font-bold text-blue-800">Backup Data</h4><p class="text-sm text-blue-600">Duplikat spreadsheet ke Google Drive</p></div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-blue-100">
+          <ul class="text-xs text-gray-600 space-y-1 ml-4 list-disc">
+            <li>Backup berupa <strong>salinan penuh spreadsheet</strong>, tersimpan di folder <strong>"Backup SEMPAJANG"</strong> di Drive</li>
+            <li>Jika perlu restore, tinggal buka file backup lalu salin data yang dibutuhkan kembali</li>
+            <li>Otomatis menyimpan <strong>30 backup terbaru</strong>; yang lebih lama akan dihapus otomatis</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
+        <h5 class="font-semibold text-gray-800 mb-3"><i class="fas fa-hand-pointer text-blue-500 mr-2"></i>Backup Manual</h5>
+        <button class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm" onclick="backupSekarang()" id="btnBackupSekarang">
+          <i class="fas fa-save mr-1"></i>Backup Sekarang
+        </button>
+        <p id="backupSekarangResult" class="text-sm text-center mt-2 min-h-[20px]"></p>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
+        <h5 class="font-semibold text-gray-800 mb-3"><i class="fas fa-toggle-on text-green-500 mr-2"></i>Backup Otomatis</h5>
+        <div id="backupTriggerStatusContainer" class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div><p class="font-medium text-gray-700" id="backupTriggerStatusText">Mengecek status...</p><p class="text-xs text-gray-500" id="backupTriggerStatusDetail"></p></div>
+          <div id="backupTriggerStatusIcon"><i class="fas fa-spinner animate-spin text-gray-400"></i></div>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <button class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm" onclick="setupBackupTrigger()" id="btnSetupBackupTrigger"><i class="fas fa-play mr-1"></i>Aktifkan</button>
+          <button class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg text-sm" onclick="hapusBackupTrigger()" id="btnHapusBackupTrigger"><i class="fas fa-stop mr-1"></i>Nonaktifkan</button>
+          <button class="py-2 px-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg text-sm" onclick="cekStatusBackupTriggerUI()"><i class="fas fa-sync-alt"></i></button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 border border-gray-200">
+        <div class="flex items-center justify-between mb-3">
+          <h5 class="font-semibold text-gray-800"><i class="fas fa-history text-purple-500 mr-2"></i>Riwayat Backup</h5>
+          <button class="text-xs font-semibold text-blue-600 hover:text-blue-800" onclick="loadRiwayatBackup()"><i class="fas fa-sync-alt mr-1"></i>Muat Ulang</button>
+        </div>
+        <div id="riwayatBackupList" class="max-h-64 overflow-y-auto divide-y divide-gray-100 border border-gray-200 rounded-xl">
+          <div class="p-4 text-center text-gray-400 text-sm">Memuat riwayat backup...</div>
+        </div>
+      </div>
+    </div>
+
     <button class="w-full mt-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all" onclick="logoutAdmin()">
       <i class="fas fa-sign-out-alt mr-2"></i>Keluar
     </button>
@@ -769,7 +818,7 @@
 // ============================================
 // KONFIGURASI API - ENDPOINT GOOGLE APPS SCRIPT
 // ============================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbx7cexmLa8WUmX78l2MVHwjHJ2qzuRqlIGyQOlfATWKwZqIpeeb-2tu39hEG8JVIUVo/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwQISyvEmcak7KPOJZW9q6AgdvqS3uCsVF4bdf_62kjW4WUwmi9do_Zwj4YmuWPn3NzcQ/exec';
 
 async function callAPI(action, params = {}) {
   const response = await fetch(API_URL, {
@@ -1233,6 +1282,7 @@ function showAdminTab(tab) {
   else if (tab === 'guru') loadAdminGuru();
   else if (tab === 'rekap') loadAdminRekap();
   else if (tab === 'autoalpa') { cekStatusAutoAlpa(); loadKelasList(); }
+  else if (tab === 'backup') { cekStatusBackupTriggerUI(); loadRiwayatBackup(); }
 }
 
 async function loadAdminSiswa() {
@@ -1577,6 +1627,78 @@ async function hapusAutoAlpaTrigger() {
   try { const r = await callAPI('hapusAutoAlpaTrigger'); alert('✅ Trigger dinonaktifkan. Total dihapus: ' + r.deleted); cekStatusAutoAlpa(); }
   catch (err) { alert('❌ Gagal: ' + err.message); }
   setButtonLoading('btnHapusTrigger', false);
+}
+
+// ============================================
+// ADMIN — BACKUP DATA
+// ============================================
+
+async function backupSekarang() {
+  const resultDiv = document.getElementById('backupSekarangResult');
+  if (!confirm('Buat backup spreadsheet sekarang?')) return;
+  setButtonLoading('btnBackupSekarang', true);
+  resultDiv.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Membuat backup...</span>';
+  try {
+    const r = await callAPI('backupSpreadsheetSekarang');
+    resultDiv.innerHTML = `<span class="text-green-600">✓ Backup berhasil dibuat (${sanitizeHTML(r.waktu)}). <a href="${r.url}" target="_blank" class="underline font-semibold">Buka file</a></span>`;
+    loadRiwayatBackup();
+  } catch (err) {
+    resultDiv.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
+  }
+  setButtonLoading('btnBackupSekarang', false);
+}
+
+async function cekStatusBackupTriggerUI() {
+  const t = document.getElementById('backupTriggerStatusText');
+  const d = document.getElementById('backupTriggerStatusDetail');
+  const i = document.getElementById('backupTriggerStatusIcon');
+  t.textContent = 'Mengecek...'; d.textContent = ''; i.innerHTML = '<i class="fas fa-spinner animate-spin text-gray-400"></i>';
+  try {
+    const r = await callAPI('cekStatusBackupTrigger');
+    if (r.aktif) { t.textContent = '✅ Backup Otomatis AKTIF'; t.className = 'font-medium text-green-700'; d.textContent = 'Berjalan otomatis setiap hari jam 01:00'; i.innerHTML = '<i class="fas fa-check-circle text-2xl text-green-500"></i>'; }
+    else { t.textContent = '❌ Backup Otomatis TIDAK AKTIF'; t.className = 'font-medium text-red-700'; d.textContent = 'Klik "Aktifkan" untuk mengaktifkan'; i.innerHTML = '<i class="fas fa-times-circle text-2xl text-red-500"></i>'; }
+  } catch (err) { t.textContent = 'Error mengecek status'; i.innerHTML = '<i class="fas fa-exclamation-circle text-2xl text-red-500"></i>'; }
+}
+
+async function setupBackupTrigger() {
+  if (!confirm('Aktifkan backup otomatis setiap hari?')) return;
+  setButtonLoading('btnSetupBackupTrigger', true);
+  try { const r = await callAPI('setupBackupOtomatisTrigger'); alert('✅ Berhasil!\n' + r.message); cekStatusBackupTriggerUI(); }
+  catch (err) { alert('❌ Gagal: ' + err.message); }
+  setButtonLoading('btnSetupBackupTrigger', false);
+}
+
+async function hapusBackupTrigger() {
+  if (!confirm('Nonaktifkan backup otomatis?')) return;
+  setButtonLoading('btnHapusBackupTrigger', true);
+  try { const r = await callAPI('hapusBackupOtomatisTrigger'); alert('✅ Backup otomatis dinonaktifkan. Total dihapus: ' + r.deleted); cekStatusBackupTriggerUI(); }
+  catch (err) { alert('❌ Gagal: ' + err.message); }
+  setButtonLoading('btnHapusBackupTrigger', false);
+}
+
+async function loadRiwayatBackup() {
+  const listEl = document.getElementById('riwayatBackupList');
+  listEl.innerHTML = '<div class="p-4 text-center text-gray-400 text-sm"><i class="fas fa-spinner animate-spin mr-1"></i>Memuat riwayat backup...</div>';
+  try {
+    const r = await callAPI('getRiwayatBackup');
+    if (!r || !r.length) {
+      listEl.innerHTML = '<div class="p-4 text-center text-gray-400 text-sm">Belum ada backup tersimpan</div>';
+      return;
+    }
+    listEl.innerHTML = r.map(item => `
+      <div class="flex items-center justify-between p-3 hover:bg-gray-50">
+        <div>
+          <p class="text-sm font-medium text-gray-700">${sanitizeHTML(item.tanggal)}</p>
+          <p class="text-xs text-gray-400">${sanitizeHTML(item.nama)}</p>
+        </div>
+        <a href="${item.url}" target="_blank" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-medium rounded-lg">
+          <i class="fas fa-external-link-alt mr-1"></i>Buka
+        </a>
+      </div>
+    `).join('');
+  } catch (err) {
+    listEl.innerHTML = `<div class="p-4 text-center text-red-500 text-sm">❌ Gagal memuat: ${sanitizeHTML(err.message)}</div>`;
+  }
 }
 
 async function simulasiAutoAlpa() {
