@@ -226,38 +226,41 @@
         <h4 class="font-semibold text-gray-800"><i class="fas fa-edit text-amber-500 mr-2"></i>Input Manual</h4>
         <span class="text-sm text-gray-500">Petugas: <b id="namaGuruManual" class="text-green-600"></b></span>
       </div>
-      <p class="text-xs text-gray-500 mb-3"><i class="fas fa-info-circle mr-1"></i>Ketik minimal 4 karakter untuk mencari siswa</p>
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3">
-        <p class="text-xs text-blue-700"><i class="fas fa-lightbulb mr-1"></i><strong>Tips:</strong> Status yang sudah ada bisa ditimpa dengan input manual ini.</p>
+        <p class="text-xs text-blue-700"><i class="fas fa-lightbulb mr-1"></i><strong>Tips:</strong> Pilih kelas, lalu centang siswa yang <b>Hadir</b>. Untuk Sakit/Izin/Alpa, gunakan pilihan status di samping nama. Status yang sudah ada bisa ditimpa.</p>
       </div>
-      <div class="relative">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Cari Siswa (Nama / NIS)</label>
-        <input type="text" id="manualSearchInput" placeholder="Ketik nama atau NIS siswa..." autocomplete="off"
-          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors"
-          oninput="searchStudent(this.value)">
-        <input type="hidden" id="manualNis">
-      </div>
-      <div id="searchResults" class="hidden mt-2 max-h-40 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg custom-scrollbar"></div>
-      <div id="selectedSiswaInfo" class="hidden mt-3 p-3 bg-green-50 border border-green-200 rounded-xl">
-        <p class="font-semibold text-green-700" id="displayNama"></p>
-        <p class="text-sm text-green-600" id="displayKelas"></p>
-      </div>
-      <div class="mt-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Status Kehadiran</label>
-        <select id="manualStatus" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors bg-white">
-          <option value="Hadir">✅ Hadir</option>
-          <option value="Sakit">🤒 Sakit</option>
-          <option value="Izin">📋 Izin</option>
-          <option value="Alpa">❌ Alpa / Tidak Hadir</option>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Pilih Kelas</label>
+        <select id="manualKelasSelect" onchange="loadSiswaKelasManual()"
+          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none transition-colors bg-white">
+          <option value="">-- Pilih Kelas --</option>
         </select>
       </div>
-      <button class="w-full mt-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-all" id="btnSimpanManual" onclick="saveManualAttendance()">
-        <i class="fas fa-save mr-2"></i>Simpan Data
-      </button>
+
+      <div id="manualKelasLoading" class="hidden mt-4 text-center text-gray-500 text-sm py-4">
+        <i class="fas fa-spinner animate-spin mr-2"></i>Memuat daftar siswa...
+      </div>
+
+      <div id="manualKelasContent" class="hidden mt-4">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-sm text-gray-600"><i class="fas fa-users mr-1"></i><span id="manualJumlahSiswa">0</span> siswa</p>
+          <button type="button" class="text-xs font-semibold text-green-600 hover:text-green-800" onclick="toggleAllHadir()">
+            <i class="fas fa-check-double mr-1"></i><span id="btnCentangSemuaLabel">Centang Semua Hadir</span>
+          </button>
+        </div>
+        <div id="manualSiswaList" class="max-h-80 overflow-y-auto bg-white border border-gray-200 rounded-xl divide-y divide-gray-100 custom-scrollbar"></div>
+
+        <button class="w-full mt-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-all" id="btnSimpanManual" onclick="saveManualAttendanceBulk()">
+          <i class="fas fa-save mr-2"></i>Simpan Absensi Kelas Ini
+        </button>
+      </div>
+
       <div id="manualResult" class="mt-3 text-center text-sm min-h-[24px]"></div>
     </div>
     <button class="w-full mt-4 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-xl transition-all" onclick="logoutPiket()">
       <i class="fas fa-times mr-2"></i>Batal / Keluar
+
     </button>
   </div>
 </section>
@@ -924,6 +927,7 @@ async function loginPiket(mode) {
       if (mode === 'manual') {
         document.getElementById('namaGuruManual').textContent = AppState.activeTeacher;
         document.getElementById('manualInputArea').classList.remove('hidden');
+        initManualKelasArea();
       } else {
         document.getElementById('namaGuruDisplay').textContent = AppState.activeTeacher;
         document.getElementById('qrGeneratorArea').classList.remove('hidden');
@@ -958,53 +962,126 @@ function logoutPiket() {
   document.getElementById('manualInputArea').classList.add('hidden');
   document.getElementById('msgGuru').textContent = '';
   document.getElementById('qrcode').innerHTML = '';
-  document.getElementById('selectedSiswaInfo').classList.add('hidden');
-  document.getElementById('searchResults').classList.add('hidden');
-  document.getElementById('manualSearchInput').value = '';
-  document.getElementById('manualNis').value = '';
+  document.getElementById('manualKelasSelect').innerHTML = '<option value="">-- Pilih Kelas --</option>';
+  document.getElementById('manualKelasContent').classList.add('hidden');
+  document.getElementById('manualSiswaList').innerHTML = '';
+  AppState.manualSiswaData = [];
+  AppState.manualKelasLoaded = null;
   document.getElementById('manualResult').innerHTML = '';
   switchRole('siswa');
 }
 
-function searchStudent(keyword) {
-  const res = document.getElementById('searchResults');
-  if (AppState.searchTimeout) clearTimeout(AppState.searchTimeout);
-  if (!keyword || keyword.length < 4) { res.classList.add('hidden'); return; }
-  AppState.searchTimeout = setTimeout(async () => {
-    res.classList.remove('hidden');
-    res.innerHTML = '<div class="p-3 text-gray-500 text-center"><i class="fas fa-spinner animate-spin mr-2"></i>Mencari...</div>';
-    try {
-      const data = await callAPI('cariSiswaByKeyword', { keyword });
-      if (!data || data.length === 0) { res.innerHTML = '<div class="p-3 text-red-500 text-center">Siswa tidak ditemukan</div>'; return; }
-      res.innerHTML = data.map(item => `<div class="p-3 border-b border-gray-100 cursor-pointer hover:bg-green-50" onclick="selectStudent('${sanitizeHTML(item.nis)}','${sanitizeHTML(item.nama)}','${sanitizeHTML(item.kelas)}')"><p class="font-semibold text-green-700">${sanitizeHTML(item.nama)}</p><p class="text-sm text-gray-500">NIS: ${sanitizeHTML(item.nis)} | Kelas: ${sanitizeHTML(item.kelas)}</p></div>`).join('');
-    } catch (err) { res.innerHTML = `<div class="p-3 text-red-500 text-center">Error: ${sanitizeHTML(err.message)}</div>`; }
-  }, 500);
-}
+// ============================================
+// GURU PIKET — INPUT MANUAL (per Kelas, checklist)
+// ============================================
+AppState.manualSiswaData = [];   // daftar siswa kelas terpilih {nis, nama, kelas}
+AppState.manualKelasLoaded = null;
 
-function selectStudent(nis, nama, kelas) {
-  document.getElementById('manualNis').value = nis;
-  document.getElementById('manualSearchInput').value = nama;
-  document.getElementById('searchResults').classList.add('hidden');
-  document.getElementById('selectedSiswaInfo').classList.remove('hidden');
-  document.getElementById('displayNama').textContent = nama;
-  document.getElementById('displayKelas').textContent = 'Kelas: ' + kelas + ' | NIS: ' + nis;
-}
-
-async function saveManualAttendance() {
-  const nis = document.getElementById('manualNis').value;
-  const status = document.getElementById('manualStatus').value;
-  const resultDiv = document.getElementById('manualResult');
-  if (!nis) { resultDiv.innerHTML = '<span class="text-red-600">⚠️ Pilih siswa terlebih dahulu!</span>'; return; }
-  setButtonLoading('btnSimpanManual', true);
-  resultDiv.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan...</span>';
+async function initManualKelasArea() {
+  const sel = document.getElementById('manualKelasSelect');
+  sel.innerHTML = '<option value="">-- Memuat kelas... --</option>';
+  document.getElementById('manualKelasContent').classList.add('hidden');
+  document.getElementById('manualResult').innerHTML = '';
   try {
-    const res = await callAPI('simpanAbsensiManual', { nis, status });
-    document.getElementById('manualNis').value = '';
-    document.getElementById('manualSearchInput').value = '';
-    document.getElementById('selectedSiswaInfo').classList.add('hidden');
-    if (res.isUpdate) resultDiv.innerHTML = `<span class="text-green-600">✓ Berhasil diubah! ${sanitizeHTML(res.nama)} (${sanitizeHTML(res.statusSebelumnya)} → <b>${sanitizeHTML(res.status)}</b>)</span>`;
-    else resultDiv.innerHTML = `<span class="text-green-600">✓ Berhasil! ${sanitizeHTML(res.nama)} tercatat <b>${sanitizeHTML(res.status)}</b></span>`;
-  } catch (err) { resultDiv.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
+    const kelasList = await callAPI('getAllKelas');
+    sel.innerHTML = '<option value="">-- Pilih Kelas --</option>' +
+      (kelasList || []).map(k => `<option value="${sanitizeHTML(k.kelas || k)}">${sanitizeHTML(k.kelas || k)}</option>`).join('');
+  } catch (err) {
+    sel.innerHTML = '<option value="">-- Gagal memuat kelas --</option>';
+    document.getElementById('manualResult').innerHTML = `<span class="text-red-600">❌ ${sanitizeHTML(err.message)}</span>`;
+  }
+}
+
+async function loadSiswaKelasManual() {
+  const kelas = document.getElementById('manualKelasSelect').value;
+  const loading = document.getElementById('manualKelasLoading');
+  const content = document.getElementById('manualKelasContent');
+  const listEl = document.getElementById('manualSiswaList');
+  document.getElementById('manualResult').innerHTML = '';
+  content.classList.add('hidden');
+  if (!kelas) return;
+  loading.classList.remove('hidden');
+  try {
+    const data = await callAPI('getSiswaByKelas', { kelas });
+    AppState.manualSiswaData = data || [];
+    AppState.manualKelasLoaded = kelas;
+    document.getElementById('manualJumlahSiswa').textContent = AppState.manualSiswaData.length;
+    if (!AppState.manualSiswaData.length) {
+      listEl.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">Belum ada siswa terdaftar di kelas ini</div>';
+    } else {
+      listEl.innerHTML = AppState.manualSiswaData.map(s => `
+        <div class="flex items-center gap-3 p-3 hover:bg-gray-50" data-nis="${sanitizeHTML(s.nis)}">
+          <input type="checkbox" class="w-5 h-5 accent-green-600 manual-chk-hadir" id="chk_${sanitizeHTML(s.nis)}"
+            onchange="onHadirToggle('${sanitizeHTML(s.nis)}')">
+          <label for="chk_${sanitizeHTML(s.nis)}" class="flex-1 cursor-pointer">
+            <p class="font-medium text-gray-800 text-sm">${sanitizeHTML(s.nama)}</p>
+            <p class="text-xs text-gray-400">NIS: ${sanitizeHTML(s.nis)}</p>
+          </label>
+          <select class="manual-status-select text-xs border-2 border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-amber-400"
+            id="sel_${sanitizeHTML(s.nis)}" onchange="onStatusSelectChange('${sanitizeHTML(s.nis)}')">
+            <option value="">-</option>
+            <option value="Sakit">🤒 Sakit</option>
+            <option value="Izin">📋 Izin</option>
+            <option value="Alpa">❌ Alpa</option>
+          </select>
+        </div>
+      `).join('');
+    }
+    content.classList.remove('hidden');
+    document.getElementById('btnCentangSemuaLabel').textContent = 'Centang Semua Hadir';
+  } catch (err) {
+    listEl.innerHTML = '';
+    document.getElementById('manualResult').innerHTML = `<span class="text-red-600">❌ Gagal memuat siswa: ${sanitizeHTML(err.message)}</span>`;
+  }
+  loading.classList.add('hidden');
+}
+
+function onHadirToggle(nis) {
+  // Mencentang Hadir otomatis mengosongkan pilihan status lain untuk siswa itu
+  const chk = document.getElementById('chk_' + nis);
+  const sel = document.getElementById('sel_' + nis);
+  if (chk.checked) sel.value = '';
+}
+
+function onStatusSelectChange(nis) {
+  // Memilih Sakit/Izin/Alpa otomatis melepas centang Hadir
+  const chk = document.getElementById('chk_' + nis);
+  const sel = document.getElementById('sel_' + nis);
+  if (sel.value) chk.checked = false;
+}
+
+function toggleAllHadir() {
+  const btnLabel = document.getElementById('btnCentangSemuaLabel');
+  const shouldCheck = btnLabel.textContent === 'Centang Semua Hadir';
+  AppState.manualSiswaData.forEach(s => {
+    const chk = document.getElementById('chk_' + s.nis);
+    const sel = document.getElementById('sel_' + s.nis);
+    if (!chk) return;
+    chk.checked = shouldCheck;
+    if (shouldCheck) sel.value = '';
+  });
+  btnLabel.textContent = shouldCheck ? 'Batalkan Centang Semua' : 'Centang Semua Hadir';
+}
+
+async function saveManualAttendanceBulk() {
+  const resultDiv = document.getElementById('manualResult');
+  const items = [];
+  AppState.manualSiswaData.forEach(s => {
+    const chk = document.getElementById('chk_' + s.nis);
+    const sel = document.getElementById('sel_' + s.nis);
+    if (chk && chk.checked) items.push({ nis: s.nis, status: 'Hadir' });
+    else if (sel && sel.value) items.push({ nis: s.nis, status: sel.value });
+  });
+  if (!items.length) { resultDiv.innerHTML = '<span class="text-red-600">⚠️ Belum ada siswa yang ditandai!</span>'; return; }
+  setButtonLoading('btnSimpanManual', true);
+  resultDiv.innerHTML = `<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan ${items.length} data...</span>`;
+  try {
+    const res = await callAPI('simpanAbsensiManualBulk', { kelas: AppState.manualKelasLoaded, items });
+    resultDiv.innerHTML = `<span class="text-green-600">✓ Berhasil menyimpan ${res.berhasil ?? items.length} data absensi kelas ${sanitizeHTML(AppState.manualKelasLoaded)}.</span>`;
+    await loadSiswaKelasManual(); // muat ulang agar checklist bersih & siap untuk sesi berikutnya
+  } catch (err) {
+    resultDiv.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
+  }
   setButtonLoading('btnSimpanManual', false);
 }
 
